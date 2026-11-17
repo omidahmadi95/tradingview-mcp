@@ -43,9 +43,14 @@ if [ -z "$APP" ] || [ ! -f "$APP" ]; then
   exit 1
 fi
 
-# Kill any existing TradingView
+# Kill any existing TradingView, then WAIT: relaunching while the old instance
+# still holds the single-instance lock makes the new one exit without CDP.
 pkill -f "TradingView" 2>/dev/null
-sleep 1
+for i in $(seq 1 15); do
+  pgrep -f "TradingView.app/Contents/MacOS/TradingView" > /dev/null || break
+  sleep 1
+done
+pgrep -f "TradingView.app/Contents/MacOS/TradingView" > /dev/null && pkill -9 -f "TradingView" && sleep 2
 
 echo "Found TradingView at: $APP"
 echo "Launching with --remote-debugging-port=$PORT ..."
